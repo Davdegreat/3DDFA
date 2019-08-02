@@ -41,10 +41,6 @@ dump_res = True
 bbox_init = 'one'
 show_flg = True
 
-"""
-add run options for face points, pose estimation (reconstruction?)
-"""
-
 
 @runway.setup(options={'checkpoint': runway.file(extension='.tar')})
 def setup(opts):
@@ -66,10 +62,14 @@ def setup(opts):
     return model.eval()
 
 
+inputs = {
+    'content_image': runway.image,
+    'output_type': runway.category(choices=['pose', 'depth', 'points', 'skin'], default='pose')
+}
 
-@runway.command('classify', inputs={'photo': image}, outputs={'image': image})
+@runway.command('classify', inputs=inputs, outputs={'image': image})
 def classify(model, inputs):
-    in_img = inputs['photo']
+    in_img = inputs['content_image']
     img_ori = np.array(in_img)
     img_fp = 'samples/test1.jpg'
 
@@ -97,14 +97,13 @@ def classify(model, inputs):
 
         # forward: one step
         img = cv2.resize(img, dsize=(STD_SIZE, STD_SIZE), interpolation=cv2.INTER_LINEAR)
-        input = transform(img).unsqueeze(0)
-        print(input)
+        model_input = transform(img).unsqueeze(0)
         with torch.no_grad():
             
             if mode == 'gpu':
                 input = input.cuda()
 
-            param = model(input)
+            param = model(model_input)
             param = param.squeeze().cpu().numpy().flatten().astype(np.float32)
 
 
@@ -134,14 +133,23 @@ def classify(model, inputs):
         vertices = predict_dense(param, roi_box)
         vertices_lst.append(vertices)
         ind += 1
-        
+    
+    if inputs['output_type'] == 'pose':
+        the_output = plot_pose_box(img_ori, Ps, pts_res)
 
-    pncc_feature = cpncc(img_ori, vertices_lst, tri - 1)
-    output = pncc_feature[:, :, ::-1]
-    print(type(output))
-    pilImg = transforms.ToPILImage()(np.uint8(output))
+    if inputs['output_type'] == 'depth':
+        pncc_feature = cpncc(img_ori, vertices_lst, tri - 1)
+        output = pncc_feature[:, :, ::-1]
+        the_output = transforms.ToPILImage()(np.uint8(output))
 
-    return { "image": pilImg } 
+    if inputs['output_type'] == 'points':
+        the_output = draw_landmarks(img_ori, pts_res, show_flg=show_flg)
+
+    if inputs['output_type'] == 'skin':
+        the_output = gen_img_paf(img_crop=img, param=param, kernel_size=paf_size)
+
+
+    return { "image": the_output } 
 
 
 if __name__ == '__main__':
