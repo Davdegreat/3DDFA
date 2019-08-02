@@ -5,6 +5,8 @@ __author__ = 'cleardusk'
 import numpy as np
 from math import sqrt
 import scipy.io as sio
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 from .ddfa import reconstruct_vertex
 

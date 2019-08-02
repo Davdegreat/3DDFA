@@ -39,7 +39,7 @@ dump_ply = True
 dump_vertex = False
 dump_res = True
 bbox_init = 'one'
-show_flg = True
+show_flg = False
 
 
 @runway.setup(options={'checkpoint': runway.file(extension='.tar')})
