@@ -97,13 +97,13 @@ def classify(model, inputs):
 
         # forward: one step
         img = cv2.resize(img, dsize=(STD_SIZE, STD_SIZE), interpolation=cv2.INTER_LINEAR)
-        model_input = transform(img).unsqueeze(0)
+        input = transform(img).unsqueeze(0)
         with torch.no_grad():
             
             if mode == 'gpu':
                 input = input.cuda()
 
-            param = model(model_input)
+            param = model(input)
             param = param.squeeze().cpu().numpy().flatten().astype(np.float32)
 
 
